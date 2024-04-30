@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = await User.findOne({ where: { username, password } });
+  const user = await User.findOne({ where: { username: username, password: password } });
   if (bcrypt.compare(password, user.password)) {
     res.json({ message: 'Login successful', username });
   } else {
