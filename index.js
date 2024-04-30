@@ -1,7 +1,6 @@
 // index.js
 const express = require('express');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
 const User = require('./models/User');
 
 const app = express();
@@ -13,17 +12,16 @@ User.sync({force: true}).then( () => console.log('tabela criada')).catch( () => 
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = await User.findOne({ where: { username: username, password: password } });
-  if (user) {
+  const user = await User.findOne({ where: { username: username } });
+  if (user && password === user.password) {
     res.json({ message: 'Login successful', username });
   } else {
     res.status(401).json({ message: 'Invalid credentials' });
   }
 });
 
-
 app.get('/users', async (req, res) => {
-  const users = await User.findAll({ attributes: ['id', 'username'] });
+  const users = await User.findAll({ attributes: ['username'] });
   res.json(users);
 });
 

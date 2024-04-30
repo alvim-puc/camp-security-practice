@@ -89,17 +89,16 @@ User.sync({force: true}).then( () => console.log('tabela criada')).catch( () => 
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = await User.findOne({ where: { username: username, password: password } });
-  if (user) {
-    res.json({ message: 'Login successful', username }); //update: tirei o objeto user, assim a senha não é vazada.
+  const user = await User.findOne({ where: { username: username } }); //removi a senha do parâmetro de pesquisa para evitar sql injections
+  if (user && password === user.password) { //verifica se a senha de entrada é igual à senha de usuario
+    res.json({ message: 'Login successful', username }); //update: passando apenas o username como parametro para nn vazar a senha que iria dentro do objeto
   } else {
     res.status(401).json({ message: 'Invalid credentials' });
   }
 });
 
-
 app.get('/users', async (req, res) => {
-  const users = await User.findAll({ attributes: ['id', 'username'] }); //aqui só removi a senha dos atributo, pois o id e o username já bastam para identificar um usuario
+  const users = await User.findAll({ attributes: ['username'] }); //aqui só removi a senha e o id dos atributo, pois, já que todos serão buscados, apenas o nome serve
   res.json(users);
 });
 
