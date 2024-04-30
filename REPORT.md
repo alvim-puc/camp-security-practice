@@ -1,41 +1,6 @@
 Para começar:
 
-- Editei o modelo User para gerar um hashcode para a senha usando a biblioteca bcrypt, assim a senha que o usuário insere não é divulgada em outras partes do codigo.
-
-antes:
-```js
-const Sequelize = require('sequelize');
-const sequelize = require('../sequelize');
-const bcrypt = require('bcrypt');
-
-const User = sequelize.define('user', {
-  username: Sequelize.STRING,
-  password: Sequelize.STRING,
-});
-
-module.exports = User;
-```
-depois:
-```js
-const Sequelize = require('sequelize');
-const sequelize = require('../sequelize');
-const bcrypt = require('bcrypt');
-
-const User = sequelize.define('user', {
-  username: Sequelize.STRING,
-  password: Sequelize.STRING,
-}, {
-  hooks: {
-    beforeCreate: async (user) => {
-      const hashpwd = await bcrypt.hash(user.password, await bcrypt.genSalt(10));
-      user.password = hashpwd;
-    }
-  }
-});
-
-module.exports = User;
-```
-- Também mudei algumas configurações do sequelize para testar meu db criado no `elephantsql`
+- Mudei algumas configurações do sequelize para testar meu db criado no `elephantsql`
 
 antes:
 ```js
@@ -54,23 +19,14 @@ module.exports = sequelize;
 depois:
 ```js
 // sequelize.js
-require('dotenv/config'); // Load environment variables from .env file
-
+require('dotenv/config'); 
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASS,
-  {
-    dialect: 'postgres',
-    port: process.env.PORT,
-    host: process.env.DB_HOST,
-  }
-);
+
+const sequelize = new Sequelize(process.env.url); //essa é a url do meu banco, nn é muito bacana sair mostrando ela assim né kskskskks
 
 module.exports = sequelize;
 ```
-- Por fim, em `index.js`, fiz algumas alterações básicas de segurança como comparar a senha fornecida com o hashcode e não com a senha original do usuario e também não fornecer dados importantes/sensíveis como id e senha de usuarios
+- Psteriormente, em `index.js`, fiz algumas alterações básicas de segurança como não fornecer dados importantes/sensíveis como id e senha de usuarios
 
 antes: 
 ```js
@@ -125,22 +81,25 @@ const bcrypt = require('bcrypt');
 const User = require('./models/User');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3333;
 
 app.use(bodyParser.json());
 
+User.sync({force: true}).then( () => console.log('tabela criada')).catch( () => console.log('error')) //aqui eu synquei o banco com a tabela (valeu Pedrao monitor!)
+
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const user = await User.findOne({ where: { username, password } });
-  if (bcrypt.compare(password, user.password)) {
-    res.json({ message: 'Login successful', username });
+  const user = await User.findOne({ where: { username: username, password: password } });
+  if (user) {
+    res.json({ message: 'Login successful', username }); //update: tirei o objeto user, assim a senha não é vazada.
   } else {
     res.status(401).json({ message: 'Invalid credentials' });
   }
 });
 
+
 app.get('/users', async (req, res) => {
-  const users = await User.findAll({ attributes: ['username'] });
+  const users = await User.findAll({ attributes: ['id', 'username'] }); //aqui só removi a senha dos atributo, pois o id e o username já bastam para identificar um usuario
   res.json(users);
 });
 
@@ -148,7 +107,7 @@ app.get('/profile', async (req, res) => {
   const { username } = req.query;
   const user = await User.findOne({ where: { username: username ?? null } });
   if (user) {
-    res.json(user.username);
+    res.json(username); //aqui eu passo só o username pois, caso eu passasse o objeto user, a saída seria assim: {"id":1,"username":"user1","password":"password1","createdAt":"2024-04-30T21:17:38.815Z","updatedAt":"2024-04-30T21:17:38.815Z"}, quando, na realidade, deveria ser assim: "user1"
   } else {
     res.status(404).json({ message: 'User not found' });
   }

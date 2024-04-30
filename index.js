@@ -5,22 +5,25 @@ const bcrypt = require('bcrypt');
 const User = require('./models/User');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3333;
 
 app.use(bodyParser.json());
+
+User.sync({force: true}).then( () => console.log('tabela criada')).catch( () => console.log('error'))
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ where: { username: username, password: password } });
-  if (bcrypt.compare(password, user.password)) {
+  if (user) {
     res.json({ message: 'Login successful', username });
   } else {
     res.status(401).json({ message: 'Invalid credentials' });
   }
 });
 
+
 app.get('/users', async (req, res) => {
-  const users = await User.findAll({ attributes: ['username'] });
+  const users = await User.findAll({ attributes: ['id', 'username'] });
   res.json(users);
 });
 
@@ -28,7 +31,7 @@ app.get('/profile', async (req, res) => {
   const { username } = req.query;
   const user = await User.findOne({ where: { username: username ?? null } });
   if (user) {
-    res.json(user.username);
+    res.json(username);
   } else {
     res.status(404).json({ message: 'User not found' });
   }

@@ -1,6 +1,5 @@
 // migrations/create-user.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
 
 module.exports = {
   up: async (queryInterface) => {
